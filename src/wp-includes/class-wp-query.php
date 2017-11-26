@@ -1773,62 +1773,8 @@ class WP_Query {
 		if ( '' !== $q['menu_order'] ) {
 			$where .= " AND {$wpdb->posts}.menu_order = " . $q['menu_order'];
 		}
-		// The "m" parameter is meant for months but accepts datetimes of varying specificity
-		if ( $q['m'] ) {
-			$where .= " AND YEAR({$wpdb->posts}.post_date)=" . substr($q['m'], 0, 4);
-			if ( strlen($q['m']) > 5 ) {
-				$where .= " AND MONTH({$wpdb->posts}.post_date)=" . substr($q['m'], 4, 2);
-			}
-			if ( strlen($q['m']) > 7 ) {
-				$where .= " AND DAYOFMONTH({$wpdb->posts}.post_date)=" . substr($q['m'], 6, 2);
-			}
-			if ( strlen($q['m']) > 9 ) {
-				$where .= " AND HOUR({$wpdb->posts}.post_date)=" . substr($q['m'], 8, 2);
-			}
-			if ( strlen($q['m']) > 11 ) {
-				$where .= " AND MINUTE({$wpdb->posts}.post_date)=" . substr($q['m'], 10, 2);
-			}
-			if ( strlen($q['m']) > 13 ) {
-				$where .= " AND SECOND({$wpdb->posts}.post_date)=" . substr($q['m'], 12, 2);
-			}
-		}
 
-		// Handle the other individual date parameters
-		$date_parameters = array();
-
-		if ( '' !== $q['hour'] )
-			$date_parameters['hour'] = $q['hour'];
-
-		if ( '' !== $q['minute'] )
-			$date_parameters['minute'] = $q['minute'];
-
-		if ( '' !== $q['second'] )
-			$date_parameters['second'] = $q['second'];
-
-		if ( $q['year'] )
-			$date_parameters['year'] = $q['year'];
-
-		if ( $q['monthnum'] )
-			$date_parameters['monthnum'] = $q['monthnum'];
-
-		if ( $q['w'] )
-			$date_parameters['week'] = $q['w'];
-
-		if ( $q['day'] )
-			$date_parameters['day'] = $q['day'];
-
-		if ( $date_parameters ) {
-			$date_query = new WP_Date_Query( array( $date_parameters ) );
-			$where .= $date_query->get_sql();
-		}
-		unset( $date_parameters, $date_query );
-
-		// Handle complex date queries
-		if ( ! empty( $q['date_query'] ) ) {
-			$this->date_query = new WP_Date_Query( $q['date_query'] );
-			$where .= $this->date_query->get_sql();
-		}
-
+		$where .= $this->parse_date_query( $q );
 
 		// If we've got a post_type AND it's not "any" post_type.
 		if ( !empty($q['post_type']) && 'any' != $q['post_type'] ) {
@@ -4082,5 +4028,76 @@ class WP_Query {
 	public function lazyload_comment_meta( $check, $comment_id ) {
 		_deprecated_function( __METHOD__, '4.5.0' );
 		return $check;
+	}
+
+	/**
+	 * Turn date query into where condition.
+	 *
+	 * @param $query
+	 *
+	 * @since DEV
+	 * @return string
+	 */
+	public function parse_date_query( $query ) {
+		global $wpdb;
+		$where = '';
+
+		// The "m" parameter is meant for months but accepts datetimes of varying specificity
+		if ( $query['m'] ) {
+			$where .= " AND YEAR({$wpdb->posts}.post_date)=" . substr($query['m'], 0, 4);
+			if ( strlen($query['m']) > 5 ) {
+				$where .= " AND MONTH({$wpdb->posts}.post_date)=" . substr($query['m'], 4, 2);
+			}
+			if ( strlen($query['m']) > 7 ) {
+				$where .= " AND DAYOFMONTH({$wpdb->posts}.post_date)=" . substr($query['m'], 6, 2);
+			}
+			if ( strlen($query['m']) > 9 ) {
+				$where .= " AND HOUR({$wpdb->posts}.post_date)=" . substr($query['m'], 8, 2);
+			}
+			if ( strlen($query['m']) > 11 ) {
+				$where .= " AND MINUTE({$wpdb->posts}.post_date)=" . substr($query['m'], 10, 2);
+			}
+			if ( strlen($query['m']) > 13 ) {
+				$where .= " AND SECOND({$wpdb->posts}.post_date)=" . substr($query['m'], 12, 2);
+			}
+		}
+
+		// Handle the other individual date parameters
+		$date_parameters = array();
+
+		if ( '' !== $query['hour'] )
+			$date_parameters['hour'] = $query['hour'];
+
+		if ( '' !== $query['minute'] )
+			$date_parameters['minute'] = $query['minute'];
+
+		if ( '' !== $query['second'] )
+			$date_parameters['second'] = $query['second'];
+
+		if ( $query['year'] )
+			$date_parameters['year'] = $query['year'];
+
+		if ( $query['monthnum'] )
+			$date_parameters['monthnum'] = $query['monthnum'];
+
+		if ( $query['w'] )
+			$date_parameters['week'] = $query['w'];
+
+		if ( $query['day'] )
+			$date_parameters['day'] = $query['day'];
+
+		if ( $date_parameters ) {
+			$date_query = new WP_Date_Query( array( $date_parameters ) );
+			$where .= $date_query->get_sql();
+		}
+		unset( $date_parameters, $date_query );
+
+		// Handle complex date queries
+		if ( ! empty( $query['date_query'] ) ) {
+			$this->date_query = new WP_Date_Query( $query['date_query'] );
+			$where .= $this->date_query->get_sql();
+		}
+
+		return $where;
 	}
 }
